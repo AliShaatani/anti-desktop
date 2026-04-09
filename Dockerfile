@@ -5,10 +5,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:1
 ENV VNC_RESOLUTION=1920x1080
 
-# FIX: Added dbus-x11 so LXQt can launch properly
+# FIX 1: Added 'qterminal' so you have a command line to program with
 RUN apt-get update && apt-get install -y --no-install-recommends \
     lxqt-core \
     openbox \
+    qterminal \
     xvfb \
     tigervnc-standalone-server \
     tigervnc-common \
@@ -36,10 +37,16 @@ RUN dpkg-divert --add --rename --divert /usr/bin/google-chrome-stable.real /usr/
     echo '#!/bin/bash\nexec /usr/bin/google-chrome-stable.real --no-sandbox --disable-dev-shm-usage "$@"' > /usr/bin/google-chrome-stable && \
     chmod +x /usr/bin/google-chrome-stable
 
-# FIX: Changed websockify target from 5900 to 5901 to match DISPLAY=:1
+# FIX 2: Added Password Authentication logic to the entrypoint
 RUN echo '#!/bin/bash\n\
+mkdir -p ~/.vnc\n\
+# Sets a default password if you forget to provide one in the compose file\n\
+VNC_PASS=${VNC_PASSWORD:-secure1234}\n\
+echo "$VNC_PASS" | vncpasswd -f > ~/.vnc/passwd\n\
+chmod 600 ~/.vnc/passwd\n\
 rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock\n\
-Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes None &\n\
+# Changed -SecurityTypes None to use the new password file\n\
+Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -rfbauth ~/.vnc/passwd &\n\
 sleep 2\n\
 export DISPLAY=$DISPLAY\n\
 startlxqt &\n\
