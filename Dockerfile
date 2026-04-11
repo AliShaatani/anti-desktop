@@ -53,17 +53,21 @@ RUN mkdir -p /root/Desktop && \
 
 # 7. Clean Entrypoint Script
 RUN echo '#!/bin/bash\n\
-mkdir -p ~/.vnc\n\
+# FIX: Use absolute paths to prevent Docker environment variables from failing\n\
+mkdir -p /root/.vnc\n\
 VNC_PASS=${VNC_PASSWORD:-secure1234}\n\
-echo "$VNC_PASS" | vncpasswd -f > ~/.vnc/passwd\n\
-chmod 600 ~/.vnc/passwd\n\
+echo "$VNC_PASS" | vncpasswd -f > /root/.vnc/passwd\n\
+chmod 600 /root/.vnc/passwd\n\
 rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock\n\
-Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -rfbauth ~/.vnc/passwd &\n\
+# FIX: Use the strict -PasswordFile parameter pointing to the absolute path\n\
+Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -PasswordFile=/root/.vnc/passwd &\n\
 sleep 2\n\
 export DISPLAY=$DISPLAY\n\
 startlxqt &\n\
-websockify --web /usr/share/novnc/ 8080 localhost:5901\n\
+websockify --web /usr/share/novnc/ 8080 127.0.0.1:5901\n\
 ' > /entrypoint.sh && chmod +x /entrypoint.sh
 
+EXPOSE 8080
+ENTRYPOINT ["/entrypoint.sh"]
 EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]
