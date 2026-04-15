@@ -52,16 +52,16 @@ RUN mkdir -p /root/Desktop && \
     chmod +x /root/Desktop/*.desktop
 
 
-# 7. Volume-Safe Entrypoint Script
+# 7. The Loop-Breaker Entrypoint Script
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'export VNC_PASS="${VNC_PASSWORD:-secure1234}"' >> /entrypoint.sh && \
     echo 'if [ ${#VNC_PASS} -lt 6 ]; then export VNC_PASS="secure1234"; fi' >> /entrypoint.sh && \
-    echo '# FIX: Generate the password file in /tmp so the Docker volume does not trap it' >> /entrypoint.sh && \
-    echo 'echo "$VNC_PASS" | vncpasswd -f > /tmp/vncpasswd' >> /entrypoint.sh && \
+    echo '# FIX 1: Use printf to prevent hidden newline characters from breaking the hash' >> /entrypoint.sh && \
+    echo 'printf "%s" "$VNC_PASS" | vncpasswd -f > /tmp/vncpasswd' >> /entrypoint.sh && \
     echo 'chmod 600 /tmp/vncpasswd' >> /entrypoint.sh && \
     echo 'rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock' >> /entrypoint.sh && \
-    echo '# FIX: Point Xvnc to the new /tmp location' >> /entrypoint.sh && \
-    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth /tmp/vncpasswd &' >> /entrypoint.sh && \
+    echo '# FIX 2: Use -PasswordFile with a SPACE, not an equals sign' >> /entrypoint.sh && \
+    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -PasswordFile /tmp/vncpasswd &' >> /entrypoint.sh && \
     echo 'sleep 2' >> /entrypoint.sh && \
     echo 'export DISPLAY=$DISPLAY' >> /entrypoint.sh && \
     echo 'startlxqt &' >> /entrypoint.sh && \
