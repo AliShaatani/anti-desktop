@@ -51,20 +51,23 @@ RUN mkdir -p /root/Desktop && \
     echo "[Desktop Entry]\nVersion=1.0\nName=Terminal\nExec=qterminal\nIcon=utilities-terminal\nTerminal=false\nType=Application" > /root/Desktop/Terminal.desktop && \
     chmod +x /root/Desktop/*.desktop
 
-# 7. Clean Entrypoint Script
-RUN echo '#!/bin/bash\n\
-mkdir -p /root/.vnc\n\
-VNC_PASS=${VNC_PASSWORD:-secure1234}\n\
-echo "$VNC_PASS" | vncpasswd -f > /root/.vnc/passwd\n\
-chmod 600 /root/.vnc/passwd\n\
-rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock\n\
-# FIX: Use the strict -rfbauth parameter required by the raw Xvnc binary\n\
-Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth /root/.vnc/passwd &\n\
-sleep 2\n\
-export DISPLAY=$DISPLAY\n\
-startlxqt &\n\
-websockify --web /usr/share/novnc/ 8080 127.0.0.1:5901\n\
-' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+# 7. Clean, Bulletproof Entrypoint Script
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'export HOME=/root' >> /entrypoint.sh && \
+    echo 'mkdir -p $HOME/.vnc' >> /entrypoint.sh && \
+    echo 'VNC_PASS="${VNC_PASSWORD:-secure1234}"' >> /entrypoint.sh && \
+    echo '# Safety net: If password is under 6 chars, vncpasswd crashes silently' >> /entrypoint.sh && \
+    echo 'if [ ${#VNC_PASS} -lt 6 ]; then VNC_PASS="secure1234"; fi' >> /entrypoint.sh && \
+    echo 'echo "$VNC_PASS" | vncpasswd -f > $HOME/.vnc/passwd' >> /entrypoint.sh && \
+    echo 'chmod 600 $HOME/.vnc/passwd' >> /entrypoint.sh && \
+    echo 'rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock' >> /entrypoint.sh && \
+    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth $HOME/.vnc/passwd &' >> /entrypoint.sh && \
+    echo 'sleep 2' >> /entrypoint.sh && \
+    echo 'export DISPLAY=$DISPLAY' >> /entrypoint.sh && \
+    echo 'startlxqt &' >> /entrypoint.sh && \
+    echo 'websockify --web /usr/share/novnc/ 8080 127.0.0.1:5901' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
 EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]
