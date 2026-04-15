@@ -52,19 +52,16 @@ RUN mkdir -p /root/Desktop && \
     chmod +x /root/Desktop/*.desktop
 
 
-# 7. Guaranteed Entrypoint Script with Debugging
+# 7. Volume-Safe Entrypoint Script
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
-    echo 'export HOME=/root' >> /entrypoint.sh && \
-    echo 'mkdir -p $HOME/.vnc' >> /entrypoint.sh && \
     echo 'export VNC_PASS="${VNC_PASSWORD:-secure1234}"' >> /entrypoint.sh && \
     echo 'if [ ${#VNC_PASS} -lt 6 ]; then export VNC_PASS="secure1234"; fi' >> /entrypoint.sh && \
-    echo '# Force the password by simulating human keyboard input' >> /entrypoint.sh && \
-    echo 'printf "%s\\n%s\\nn\\n" "$VNC_PASS" "$VNC_PASS" | vncpasswd $HOME/.vnc/passwd' >> /entrypoint.sh && \
-    echo 'chmod 600 $HOME/.vnc/passwd' >> /entrypoint.sh && \
-    echo '# DEBUGGING: Print the file size to the Dokploy logs to prove it is not 0 bytes' >> /entrypoint.sh && \
-    echo 'ls -la $HOME/.vnc/passwd' >> /entrypoint.sh && \
+    echo '# FIX: Generate the password file in /tmp so the Docker volume does not trap it' >> /entrypoint.sh && \
+    echo 'echo "$VNC_PASS" | vncpasswd -f > /tmp/vncpasswd' >> /entrypoint.sh && \
+    echo 'chmod 600 /tmp/vncpasswd' >> /entrypoint.sh && \
     echo 'rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock' >> /entrypoint.sh && \
-    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth $HOME/.vnc/passwd &' >> /entrypoint.sh && \
+    echo '# FIX: Point Xvnc to the new /tmp location' >> /entrypoint.sh && \
+    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth /tmp/vncpasswd &' >> /entrypoint.sh && \
     echo 'sleep 2' >> /entrypoint.sh && \
     echo 'export DISPLAY=$DISPLAY' >> /entrypoint.sh && \
     echo 'startlxqt &' >> /entrypoint.sh && \
