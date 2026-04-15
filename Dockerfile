@@ -5,7 +5,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:1
 ENV VNC_RESOLUTION=1920x1080
 
-# THE FIX: Added tigervnc-tools to restore the missing vncpasswd binary
+# FIX 1: Added fonts-liberation so the terminal can draw text, and bash for the shell
 RUN apt-get update && apt-get install -y --no-install-recommends \
     lxqt-core \
     pcmanfm-qt \
@@ -22,6 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gpg \
     wget \
     ca-certificates \
+    fonts-liberation \
+    bash \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && \
@@ -41,10 +43,29 @@ RUN dpkg-divert --add --rename --divert /usr/bin/google-chrome-stable.real /usr/
 
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
+# FIX 2 & 3: Multi-line echo guarantees perfect formatting. Antigravity gets its arguments, and Terminal gets bash.
 RUN mkdir -p /root/Desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Google Chrome\nExec=/usr/bin/google-chrome-stable\nIcon=google-chrome\nTerminal=false\nType=Application" > /root/Desktop/Chrome.desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Antigravity\nExec=antigravity --no-sandbox --user-data-dir=/root/.config/antigravity\nIcon=system-software-install\nTerminal=false\nType=Application" > /root/Desktop/Antigravity.desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Terminal\nExec=qterminal\nIcon=utilities-terminal\nTerminal=false\nType=Application" > /root/Desktop/Terminal.desktop && \
+    echo "[Desktop Entry]" > /root/Desktop/Chrome.desktop && \
+    echo "Version=1.0" >> /root/Desktop/Chrome.desktop && \
+    echo "Name=Google Chrome" >> /root/Desktop/Chrome.desktop && \
+    echo "Exec=/usr/bin/google-chrome-stable" >> /root/Desktop/Chrome.desktop && \
+    echo "Icon=google-chrome" >> /root/Desktop/Chrome.desktop && \
+    echo "Terminal=false" >> /root/Desktop/Chrome.desktop && \
+    echo "Type=Application" >> /root/Desktop/Chrome.desktop && \
+    echo "[Desktop Entry]" > /root/Desktop/Antigravity.desktop && \
+    echo "Version=1.0" >> /root/Desktop/Antigravity.desktop && \
+    echo "Name=Antigravity" >> /root/Desktop/Antigravity.desktop && \
+    echo "Exec=antigravity --no-sandbox --user-data-dir=/root/.config/antigravity" >> /root/Desktop/Antigravity.desktop && \
+    echo "Icon=system-software-install" >> /root/Desktop/Antigravity.desktop && \
+    echo "Terminal=false" >> /root/Desktop/Antigravity.desktop && \
+    echo "Type=Application" >> /root/Desktop/Antigravity.desktop && \
+    echo "[Desktop Entry]" > /root/Desktop/Terminal.desktop && \
+    echo "Version=1.0" >> /root/Desktop/Terminal.desktop && \
+    echo "Name=Terminal" >> /root/Desktop/Terminal.desktop && \
+    echo "Exec=qterminal -e bash" >> /root/Desktop/Terminal.desktop && \
+    echo "Icon=utilities-terminal" >> /root/Desktop/Terminal.desktop && \
+    echo "Terminal=false" >> /root/Desktop/Terminal.desktop && \
+    echo "Type=Application" >> /root/Desktop/Terminal.desktop && \
     chmod +x /root/Desktop/*.desktop
 
 # 7. Clean Entrypoint Script
@@ -53,7 +74,7 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'echo "$VNC_PASS" | vncpasswd -f > /tmp/vncpasswd' >> /entrypoint.sh && \
     echo 'chmod 600 /tmp/vncpasswd' >> /entrypoint.sh && \
     echo 'rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock' >> /entrypoint.sh && \
-    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth /tmp/vncpasswd &' >> /entrypoint.sh && \
+    echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 16 -SecurityTypes VncAuth -rfbauth /tmp/vncpasswd &' >> /entrypoint.sh && \
     echo 'sleep 2' >> /entrypoint.sh && \
     echo 'export DISPLAY=$DISPLAY' >> /entrypoint.sh && \
     echo 'startlxqt &' >> /entrypoint.sh && \
