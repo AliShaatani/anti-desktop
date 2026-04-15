@@ -43,7 +43,7 @@ RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
 RUN mkdir -p /root/Desktop && \
     echo "[Desktop Entry]\nVersion=1.0\nName=Google Chrome\nExec=/usr/bin/google-chrome-stable\nIcon=google-chrome\nTerminal=false\nType=Application" > /root/Desktop/Chrome.desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Antigravity\nExec=antigravity\nIcon=system-software-install\nTerminal=false\nType=Application" > /root/Desktop/Antigravity.desktop && \
+    echo "[Desktop Entry]\nVersion=1.0\nName=Antigravity\nExec=antigravity --no-sandbox --user-data-dir=/root/.config/antigravity\nIcon=system-software-install\nTerminal=false\nType=Application" > /root/Desktop/Antigravity.desktop && \
     echo "[Desktop Entry]\nVersion=1.0\nName=Terminal\nExec=qterminal\nIcon=utilities-terminal\nTerminal=false\nType=Application" > /root/Desktop/Terminal.desktop && \
     chmod +x /root/Desktop/*.desktop
 
