@@ -52,15 +52,17 @@ RUN mkdir -p /root/Desktop && \
     chmod +x /root/Desktop/*.desktop
 
 
-# 7. Clean, Bulletproof Entrypoint Script
+# 7. Guaranteed Entrypoint Script with Debugging
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'export HOME=/root' >> /entrypoint.sh && \
     echo 'mkdir -p $HOME/.vnc' >> /entrypoint.sh && \
-    echo 'VNC_PASS="${VNC_PASSWORD:-secure1234}"' >> /entrypoint.sh && \
-    echo '# Safety net: If password is under 6 chars, vncpasswd crashes silently' >> /entrypoint.sh && \
-    echo 'if [ ${#VNC_PASS} -lt 6 ]; then VNC_PASS="secure1234"; fi' >> /entrypoint.sh && \
-    echo 'echo "$VNC_PASS" | vncpasswd -f > $HOME/.vnc/passwd' >> /entrypoint.sh && \
+    echo 'export VNC_PASS="${VNC_PASSWORD:-secure1234}"' >> /entrypoint.sh && \
+    echo 'if [ ${#VNC_PASS} -lt 6 ]; then export VNC_PASS="secure1234"; fi' >> /entrypoint.sh && \
+    echo '# Force the password by simulating human keyboard input' >> /entrypoint.sh && \
+    echo 'printf "%s\\n%s\\nn\\n" "$VNC_PASS" "$VNC_PASS" | vncpasswd $HOME/.vnc/passwd' >> /entrypoint.sh && \
     echo 'chmod 600 $HOME/.vnc/passwd' >> /entrypoint.sh && \
+    echo '# DEBUGGING: Print the file size to the Dokploy logs to prove it is not 0 bytes' >> /entrypoint.sh && \
+    echo 'ls -la $HOME/.vnc/passwd' >> /entrypoint.sh && \
     echo 'rm -rf /tmp/.X11-unix/X1 /tmp/.X1-lock' >> /entrypoint.sh && \
     echo 'Xvnc $DISPLAY -geometry $VNC_RESOLUTION -depth 24 -SecurityTypes VncAuth -rfbauth $HOME/.vnc/passwd &' >> /entrypoint.sh && \
     echo 'sleep 2' >> /entrypoint.sh && \
