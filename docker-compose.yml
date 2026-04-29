@@ -1,19 +1,18 @@
 version: '3.8'
 
 services:
-  mini-pc-core:
+  kali-desktop:
     build: .
-    container_name: lxqt-core-desktop
+    container_name: kali-lxqt-desktop
     shm_size: '2gb' 
     ports:
       - "8080:8080"
     environment:
       - VNC_RESOLUTION=1920x1080
-      # FIX: Use the ${} syntax to tell Docker to look for an external variable
-      - VNC_PASSWORD=${VNC_PASSWORD} 
+      - VNC_PASSWORD=${VNC_PASSWORD:-kali123} 
     restart: unless-stopped
     volumes:
-      - workspace_data:/root 
+      - kali_data:/root 
 
 volumes:
-  workspace_data:
+  kali_data:
