@@ -2,7 +2,7 @@ FROM kalilinux/kali-rolling
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Kali Xfce, noVNC, and dependencies
+# Install essentials
 RUN apt-get update && apt-get install -y \
     kali-desktop-xfce \
     novnc \
@@ -14,11 +14,11 @@ RUN apt-get update && apt-get install -y \
 # Set index.html as default
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
-# Create the startup script
+# Create startup script
 RUN echo '#!/bin/bash\n\
-# Set VNC Password\n\
+# Set the VNC Password securely\n\
 mkdir -p ~/.vnc\n\
-x11vnc -storepasswd ${VNC_PASSWORD} ~/.vnc/passwd\n\
+x11vnc -storepasswd "${VNC_PASSWORD}" ~/.vnc/passwd\n\
 \n\
 # Start Virtual Framebuffer\n\
 Xvfb :0 -screen 0 ${VNC_RESOLUTION}x16 &\n\
@@ -28,8 +28,8 @@ sleep 2\n\
 DISPLAY=:0 startxfce4 &\n\
 sleep 2\n\
 \n\
-# FIXED: Removed -ncache and -ncache_cr to stop the "stacked black screens" issue\n\
-x11vnc -display :0 -rfbauth ~/.vnc/passwd -autoport -localhost -bg -xkb -quiet -forever &\n\
+# FIXED: Added -shared for multi-device access and removed caching\n\
+x11vnc -display :0 -rfbauth ~/.vnc/passwd -shared -forever -bg -xkb -quiet &\n\
 sleep 2\n\
 \n\
 # Start noVNC proxy\n\
