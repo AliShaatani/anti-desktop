@@ -1,10 +1,8 @@
-# Use the official Kali Linux base image
 FROM kalilinux/kali-rolling
 
-# Prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install desktop environment, noVNC, and X-server dependencies
+# Install the standard Kali Xfce desktop environment and noVNC tools
 RUN apt-get update && apt-get install -y \
     kali-desktop-xfce \
     novnc \
@@ -13,23 +11,29 @@ RUN apt-get update && apt-get install -y \
     dbus-x11 \
     && apt-get clean
 
-# Create a startup script to launch the services
+# Create the startup script to initialize the display and VNC
 RUN echo '#!/bin/bash\n\
-# 1. Start Virtual Framebuffer (Virtual Display) on :0\n\
-Xvfb :0 -screen 0 1024x768x16 &\n\
+# Set VNC Password\n\
+mkdir -p ~/.vnc\n\
+x11vnc -storepasswd ${VNC_PASSWORD} ~/.vnc/passwd\n\
+\n\
+# Start Virtual Framebuffer with your requested resolution\n\
+Xvfb :0 -screen 0 ${VNC_RESOLUTION}x16 &\n\
 sleep 2\n\
-# 2. Start the Desktop Environment\n\
+\n\
+# Start the standard Kali Xfce desktop\n\
 DISPLAY=:0 startxfce4 &\n\
 sleep 2\n\
-# 3. Start x11vnc as per article instructions\n\
-x11vnc -display :0 -autoport -localhost -nopw -bg -xkb -ncache -ncache_cr -quiet -forever &\n\
+\n\
+# Start x11vnc using the password file\n\
+x11vnc -display :0 -rfbauth ~/.vnc/passwd -autoport -localhost -bg -xkb -ncache -ncache_cr -quiet -forever &\n\
 sleep 2\n\
-# 4. Start noVNC proxy as per article instructions\n\
-/usr/share/novnc/utils/novnc_proxy --listen 8081 --vnc localhost:5900' > /startup.sh
+\n\
+# Start noVNC proxy on 8080 (matching your compose port)\n\
+/usr/share/novnc/utils/novnc_proxy --listen 8080 --vnc localhost:5900' > /startup.sh
 
 RUN chmod +x /startup.sh
 
-# Expose the noVNC port
-EXPOSE 8081
+EXPOSE 8080
 
 CMD ["/startup.sh"]
