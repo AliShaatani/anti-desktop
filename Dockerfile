@@ -1,10 +1,9 @@
-# Use a stable Kali base
-FROM kalilinux/kali-rolling:latest
+FROM docker.io/kalilinux/kali-rolling:latest
 
-# Prevent prompts during installation
+# Suppress interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install only the essentials for the Desktop Environment
+# Essential Desktop & VNC setup
 RUN apt-get update && apt-get install -y --no-install-recommends \
     kali-linux-core \
     lxqt-core \
@@ -18,17 +17,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     dbus-x11 \
-    fonts-liberation \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up the VNC server environment
+# Environment for VNC
 ENV USER=root
 ENV HOME=/root
 WORKDIR /root
 
-# Expose the noVNC port
 EXPOSE 8080
 
-# Start script (ensure your repo has a script to launch Xvfb and noVNC)
-CMD ["/bin/bash", "-c", "vncserver :1 -securitytypes none && websockify --web /usr/share/novnc/ 8080 localhost:5901"]
+# Start VNC and noVNC
+CMD ["/bin/bash", "-c", "vncserver :1 -securitytypes none -geometry 1280x720 && websockify --web /usr/share/novnc/ 8080 localhost:5901"]
