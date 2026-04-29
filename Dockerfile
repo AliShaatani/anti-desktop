@@ -17,27 +17,21 @@ RUN apt-get update && \
 
 # 2. Install Kali Large + Desktop Environment
 # Note: I added "eatmydata" to speed up the massive install and skip fsyncs
+# Combine updates and use a more stable meta-package
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    kali-linux-large \
+    kali-linux-default \
     lxqt-core \
     pcmanfm-qt \
     openbox \
     qterminal \
     xvfb \
     tigervnc-standalone-server \
-    tigervnc-common \
-    tigervnc-tools \
     novnc \
     websockify \
-    dbus-x11 \
-    dbus \
     curl \
-    gpg \
-    wget \
     ca-certificates \
-    fonts-liberation \
-    bash \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # 3. Chrome Installation
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && \
