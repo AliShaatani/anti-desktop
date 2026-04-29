@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM kalilinux/kali-rolling:latest
 
-# 1. Environment Setup
+# 1. Environment & Locale Setup
 ARG DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:1
 ENV VNC_RESOLUTION=1920x1080
@@ -9,7 +9,7 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV LIBGL_ALWAYS_SOFTWARE=1
 
-# 2. Install Kali Base, Desktop Environment, and Dependencies
+# 2. Install Kali Tools, LXQT, and System Services
 RUN apt-get update && apt-get install -y --no-install-recommends \
     kali-linux-large \
     lxqt-core \
@@ -23,13 +23,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     dbus-x11 \
+    dbus \
     curl \
     gpg \
     wget \
     ca-certificates \
     fonts-liberation \
     bash \
-    dbus \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 3. Install Google Chrome
@@ -45,21 +45,22 @@ RUN mkdir -p /etc/apt/keyrings && \
     apt-get update && apt-get install -y --no-install-recommends antigravity \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 5. Fix Sandbox issues for Chrome (Root User Fix)
+# 5. Fix Sandbox & Web Path (Fixes 404 and Root Crashes)
 RUN dpkg-divert --add --rename --divert /usr/bin/google-chrome-stable.real /usr/bin/google-chrome-stable && \
     echo '#!/bin/bash\nexec /usr/bin/google-chrome-stable.real --no-sandbox --disable-dev-shm-usage --disable-gpu "$@"' > /usr/bin/google-chrome-stable && \
     chmod +x /usr/bin/google-chrome-stable
 
+# Link noVNC correctly to prevent 404s
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
-# 6. Create Desktop Shortcuts with Sandbox Fixes for Antigravity
+# 6. Create Desktop Shortcuts with Sandbox Bypasses
 RUN mkdir -p /root/Desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Google Chrome\nExec=/usr/bin/google-chrome-stable\nIcon=google-chrome\nTerminal=false\nType=Application" > /root/Desktop/Chrome.desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Antigravity\nExec=antigravity --no-sandbox --disable-setuid-sandbox --user-data-dir=/root/.config/antigravity\nIcon=system-software-install\nTerminal=false\nType=Application" > /root/Desktop/Antigravity.desktop && \
-    echo "[Desktop Entry]\nVersion=1.0\nName=Terminal\nExec=qterminal -e bash\nIcon=utilities-terminal\nTerminal=false\nType=Application" > /root/Desktop/Terminal.desktop && \
+    echo -e "[Desktop Entry]\nVersion=1.0\nName=Chrome\nExec=/usr/bin/google-chrome-stable\nIcon=google-chrome\nTerminal=false\nType=Application" > /root/Desktop/Chrome.desktop && \
+    echo -e "[Desktop Entry]\nVersion=1.0\nName=Antigravity\nExec=antigravity --no-sandbox --disable-setuid-sandbox --user-data-dir=/root/.config/antigravity\nIcon=system-software-install\nTerminal=false\nType=Application" > /root/Desktop/Antigravity.desktop && \
+    echo -e "[Desktop Entry]\nVersion=1.0\nName=Terminal\nExec=qterminal -e bash\nIcon=utilities-terminal\nTerminal=false\nType=Application" > /root/Desktop/Terminal.desktop && \
     chmod +x /root/Desktop/*.desktop
 
-# 7. Create Entrypoint Script with DBus initialization
+# 7. Comprehensive Entrypoint Script
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'mkdir -p /var/run/dbus' >> /entrypoint.sh && \
     echo 'service dbus start' >> /entrypoint.sh && \
