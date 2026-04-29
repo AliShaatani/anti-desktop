@@ -1,31 +1,35 @@
-FROM docker.io/kalilinux/kali-rolling:latest
+# Use the official Kali Linux base image
+FROM kalilinux/kali-rolling
 
-# Suppress interactive prompts
+# Prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Essential Desktop & VNC setup
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    kali-linux-core \
-    lxqt-core \
-    pcmanfm-qt \
-    openbox \
-    qterminal \
-    xvfb \
-    tigervnc-standalone-server \
+# Update and install desktop environment, noVNC, and X-server dependencies
+RUN apt-get update && apt-get install -y \
+    kali-desktop-xfce \
     novnc \
-    websockify \
-    curl \
-    ca-certificates \
+    x11vnc \
+    xvfb \
     dbus-x11 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean
 
-# Environment for VNC
-ENV USER=root
-ENV HOME=/root
-WORKDIR /root
+# Create a startup script to launch the services
+RUN echo '#!/bin/bash\n\
+# 1. Start Virtual Framebuffer (Virtual Display) on :0\n\
+Xvfb :0 -screen 0 1024x768x16 &\n\
+sleep 2\n\
+# 2. Start the Desktop Environment\n\
+DISPLAY=:0 startxfce4 &\n\
+sleep 2\n\
+# 3. Start x11vnc as per article instructions\n\
+x11vnc -display :0 -autoport -localhost -nopw -bg -xkb -ncache -ncache_cr -quiet -forever &\n\
+sleep 2\n\
+# 4. Start noVNC proxy as per article instructions\n\
+/usr/share/novnc/utils/novnc_proxy --listen 8081 --vnc localhost:5900' > /startup.sh
 
-EXPOSE 8080
+RUN chmod +x /startup.sh
 
-# Start VNC and noVNC
-CMD ["/bin/bash", "-c", "vncserver :1 -securitytypes none -geometry 1280x720 && websockify --web /usr/share/novnc/ 8080 localhost:5901"]
+# Expose the noVNC port
+EXPOSE 8081
+
+CMD ["/startup.sh"]
