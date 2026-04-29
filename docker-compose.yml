@@ -13,7 +13,13 @@ services:
       - LIBGL_ALWAYS_SOFTWARE=1
     restart: unless-stopped
     volumes:
-      - kali_data:/root 
+      - kali_root:/root
+      - kali_system_usr:/usr
+      - kali_system_var:/var
+      - kali_system_etc:/etc
 
 volumes:
-  kali_data:
+  kali_root:
+  kali_system_usr:
+  kali_system_var:
+  kali_system_etc:
