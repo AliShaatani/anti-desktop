@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  kali-desktop:
+  mini-pc-core:  # Name changed back to match your domain config
     build: .
     container_name: kali-lxqt-desktop
     shm_size: '2gb' 
@@ -9,7 +9,8 @@ services:
       - "8080:8080"
     environment:
       - VNC_RESOLUTION=1920x1080
-      - VNC_PASSWORD=${VNC_PASSWORD:-kali123} 
+      - VNC_PASSWORD=${VNC_PASSWORD:-kali123}
+      - LIBGL_ALWAYS_SOFTWARE=1
     restart: unless-stopped
     volumes:
       - kali_data:/root 
